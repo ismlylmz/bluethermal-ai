@@ -1,0 +1,709 @@
+<title>BlueThermal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,500..800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: customer-facing product. One question per view; a large visual answers it; details fold away. */
+:root {
+  --bg: #EEF3F5; --surface: #FFFFFF; --sunk: #E4ECF0; --ink: #0E2230; --muted: #566C79; --line: #D3DEE4;
+  --sea: #1C5A75; --sea-soft: #D2E5EC; --heat: #C9501C; --heat-soft: #F7E0D4;
+  --good: #23784F; --warn: #A86A10; --bad: #B23A1B; --raw: #8AA3B0;
+  --f-display: "Archivo", "Arial Narrow", Arial, sans-serif;
+  --f-body: "IBM Plex Sans", "Segoe UI", Roboto, Arial, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+  --r: 12px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #08141C; --surface: #0F202B; --sunk: #0B1A23; --ink: #E4EDF1; --muted: #93A9B5; --line: #1F3846;
+  --sea: #6DB2CF; --sea-soft: #173847; --heat: #FF8A52; --heat-soft: #3A2116;
+  --good: #5CC995; --warn: #E3A83C; --bad: #FF7A55; --raw: #5E7987; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #08141C; --surface: #0F202B; --sunk: #0B1A23; --ink: #E4EDF1; --muted: #93A9B5; --line: #1F3846;
+  --sea: #6DB2CF; --sea-soft: #173847; --heat: #FF8A52; --heat-soft: #3A2116;
+  --good: #5CC995; --warn: #E3A83C; --bad: #FF7A55; --raw: #5E7987; color-scheme: dark }
+
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--ink); font: 15px/1.5 var(--f-body) }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface) }
+.wrap { max-width: 1180px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)) }
+.mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums }
+
+header.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--surface); border-bottom: 1px solid var(--line) }
+.bar .wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 22px; padding-block: 12px }
+.brand { display: flex; align-items: center; gap: 9px }
+.brand b { font: 700 19px/1 var(--f-display); font-stretch: 90% }
+.site { font-size: 13px; color: var(--muted) }
+.site strong { color: var(--ink); font-weight: 600 }
+nav.tabs { display: flex; gap: 4px; margin-left: auto; background: var(--sunk); padding: 4px; border-radius: 999px }
+nav.tabs a { padding: 7px 16px; border-radius: 999px; color: var(--muted); text-decoration: none; font-weight: 600; font-size: 14px; white-space: nowrap }
+nav.tabs a[aria-current="page"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgb(0 0 0 / .12) }
+.dstat { border-top: 1px solid var(--line); background: var(--sunk) }
+.dstat .wrap { display: flex; flex-wrap: wrap; gap: 4px 20px; padding-block: 6px; font-size: 12px; color: var(--muted) }
+.dstat b { color: var(--ink); font-weight: 500; font-family: var(--f-mono) }
+.dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--good); margin-right: 6px; vertical-align: 1px }
+.dot.old { background: var(--warn) }
+:focus-visible { outline: 2px solid var(--sea); outline-offset: 2px }
+
+main { padding-block: 28px 48px }
+.head { display: grid; gap: 6px; margin-bottom: 18px; max-width: 72ch }
+.head h1 { font: 700 30px/1.15 var(--f-display); font-stretch: 85%; margin: 0; text-wrap: balance }
+.head p { margin: 0; color: var(--muted); font-size: 16px }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 20px; min-width: 0 }
+.card h2 { font: 700 18px/1.2 var(--f-display); font-stretch: 90%; margin: 0 0 4px }
+.card .sub { color: var(--muted); font-size: 14px; margin: 0 0 14px }
+.stack { display: grid; gap: 18px }
+
+.hero { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 0; padding: 0; overflow: hidden }
+@media (max-width: 880px) { .hero { grid-template-columns: minmax(0, 1fr) } }
+.scene { background: var(--sunk); min-width: 0 }
+.scene svg { display: block; width: 100%; height: auto }
+.readout { padding: 22px; display: grid; gap: 18px; align-content: start; min-width: 0 }
+.date { font: 600 13px var(--f-mono); color: var(--muted); letter-spacing: .04em; text-transform: uppercase }
+.date b { display: block; font: 700 26px/1.1 var(--f-display); font-stretch: 85%; color: var(--ink); letter-spacing: 0; text-transform: none; margin-top: 2px }
+.gauges { display: grid; grid-template-columns: 1fr 1fr; gap: 12px }
+.gauge { text-align: center }
+.gauge svg { width: 100%; max-width: 190px; height: auto }
+.gauge .lab { font-size: 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .05em }
+.counters { display: grid; grid-template-columns: 1fr 1fr; gap: 10px }
+.ctr { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px }
+.ctr .k { font-size: 12px; color: var(--muted) }
+.ctr .v { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap }
+.ctr .v b { font: 700 24px/1.1 var(--f-display); font-stretch: 85%; font-variant-numeric: tabular-nums; color: var(--heat) }
+.ctr .v s { color: var(--raw); font: 500 13px var(--f-mono) }
+.controls { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; padding: 14px 20px; border-top: 1px solid var(--line) }
+.play { display: inline-flex; align-items: center; gap: 8px; border: 0; border-radius: 999px; background: var(--ink); color: var(--surface); font: 600 14px var(--f-body); padding: 9px 16px; cursor: pointer; white-space: nowrap }
+.timeline { flex: 1 1 240px; display: grid; gap: 2px; min-width: 0 }
+.timeline input { width: 100%; accent-color: var(--heat) }
+.timeline small { display: flex; justify-content: space-between; color: var(--muted); font: 500 11px var(--f-mono) }
+.seg { display: inline-flex; background: var(--sunk); border-radius: 999px; padding: 3px; gap: 2px; flex-wrap: wrap }
+.seg button { border: 0; background: transparent; color: var(--muted); padding: 6px 12px; border-radius: 999px; font: 600 13px var(--f-body); cursor: pointer }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgb(0 0 0 / .14) }
+.seglab { font-size: 12px; color: var(--muted); font-weight: 600; margin-right: 4px }
+
+.answer { font: 500 18px/1.45 var(--f-body); margin: 0 0 16px; max-width: 70ch }
+.answer em { font-style: normal; font-weight: 700; color: var(--heat) }
+.bars { display: grid; gap: 10px }
+.brow { display: grid; grid-template-columns: 56px minmax(0, 1fr) 140px; gap: 12px; align-items: center; cursor: pointer; border-radius: 8px; padding: 6px }
+.brow[aria-pressed="true"] { background: color-mix(in oklab, var(--heat) 9%, transparent) }
+.brow .d { font: 600 15px var(--f-mono) }
+.track { display: grid; gap: 4px }
+.bar-c, .bar-r { display: block; height: 14px; border-radius: 3px; min-width: 2px }
+.bar-c { background: var(--heat) }
+.bar-r { background: var(--raw); height: 6px }
+.brow .val { font: 500 13px var(--f-mono); text-align: right; color: var(--muted) }
+.brow .val b { color: var(--ink); font-weight: 600 }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12px; color: var(--muted); margin-top: 12px }
+.legend i { display: inline-block; width: 14px; height: 8px; border-radius: 2px; margin-right: 6px; vertical-align: 0 }
+
+.compare { display: grid; grid-template-columns: 1fr 1fr; gap: 14px }
+@media (max-width: 760px) { .compare { grid-template-columns: 1fr } }
+.plan { border: 1px solid var(--line); border-radius: var(--r); padding: 18px; background: var(--surface); display: grid; gap: 12px }
+.plan.us { border-color: color-mix(in oklab, var(--sea) 55%, var(--line)); box-shadow: inset 0 3px 0 var(--sea) }
+.plan h3 { margin: 0; font: 700 16px var(--f-display); font-stretch: 90% }
+.plan .rows { display: grid; gap: 8px }
+.plan .row { display: flex; justify-content: space-between; gap: 10px; font-size: 14px; border-bottom: 1px dashed var(--line); padding-bottom: 6px }
+.plan .row b { font: 600 15px var(--f-mono); font-variant-numeric: tabular-nums; white-space: nowrap }
+.plan .row b.bad { color: var(--bad) }
+.saving { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; background: var(--sea-soft); border-radius: var(--r); padding: 14px 18px; margin-top: 14px }
+.saving b { font: 700 30px/1 var(--f-display); font-stretch: 85%; color: var(--sea) }
+
+.kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px }
+@media (max-width: 760px) { .kpis { grid-template-columns: 1fr } }
+.kpi { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; display: grid; gap: 4px }
+.kpi .k { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; font-weight: 600 }
+.kpi .big { font: 700 32px/1.05 var(--f-display); font-stretch: 85%; font-variant-numeric: tabular-nums }
+.kpi .note { font-size: 13px; color: var(--muted) }
+
+.facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px }
+@media (max-width: 960px) { .facts { grid-template-columns: repeat(2, minmax(0, 1fr)) } }
+@media (max-width: 520px) { .facts { grid-template-columns: 1fr } }
+.fact { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 18px; display: grid; gap: 6px; align-content: start }
+.fact .big { font: 800 36px/1 var(--f-display); font-stretch: 80%; color: var(--sea); font-variant-numeric: tabular-nums }
+.fact .big.h { color: var(--heat) }
+.fact p { margin: 0; font-size: 14px }
+.fact small { color: var(--muted); font-size: 12px }
+
+.chartbox { position: relative; height: 320px }
+.chartbox.sm { height: 230px }
+.key { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12px; color: var(--muted); margin-top: 8px }
+.key i { display: inline-block; width: 14px; height: 3px; vertical-align: middle; margin-right: 6px; border-radius: 2px }
+
+details.more { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r) }
+details.more > summary { cursor: pointer; padding: 14px 20px; font-weight: 600; list-style: none; display: flex; justify-content: space-between; gap: 12px }
+details.more > summary::-webkit-details-marker { display: none }
+details.more > summary::after { content: "Show"; color: var(--sea); font-size: 13px }
+details.more[open] > summary::after { content: "Hide" }
+details.more > div { padding: 0 20px 20px; display: grid; gap: 22px }
+.tablewrap { overflow-x: auto }
+table { border-collapse: collapse; width: 100%; font-size: 14px }
+th, td { text-align: right; padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap }
+th:first-child, td:first-child { text-align: left }
+th { font-size: 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .05em }
+td { font-family: var(--f-mono); font-variant-numeric: tabular-nums }
+table.wraptext td, table.wraptext th { white-space: normal; text-align: left; vertical-align: top; font-family: var(--f-body) }
+.pill { display: inline-block; font: 600 11px var(--f-body); padding: 2px 8px; border-radius: 999px }
+.pill.good { background: color-mix(in oklab, var(--good) 18%, transparent); color: var(--good) }
+.pill.bad { background: color-mix(in oklab, var(--bad) 18%, transparent); color: var(--bad) }
+.pill.info { background: var(--sea-soft); color: var(--sea) }
+.pill.warn { background: color-mix(in oklab, var(--warn) 20%, transparent); color: var(--warn) }
+.h3s { font: 700 16px var(--f-display); font-stretch: 90%; margin: 0 0 6px }
+.note { color: var(--muted); font-size: 13px; margin: 0 0 10px }
+.sliders { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px 22px }
+.ctl { display: grid; gap: 4px }
+.ctl label { display: flex; justify-content: space-between; font-size: 13px; font-weight: 500; gap: 8px }
+.ctl output { font-family: var(--f-mono); color: var(--heat) }
+.ctl small { color: var(--muted); font-size: 12px }
+.ctl input { width: 100%; accent-color: var(--heat) }
+.two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px }
+@media (max-width: 880px) { .two { grid-template-columns: minmax(0, 1fr) } }
+footer { color: var(--muted); font-size: 12px; padding-block: 0 32px }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important } }
+</style>
+
+<header class="bar">
+  <div class="wrap">
+    <div class="brand"><svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><rect x="1" y="1" width="20" height="20" rx="5" fill="#123B4F"/><path d="M5 9c2-2 4 2 6 0s4 2 6 0M5 14c2-2 4 2 6 0s4 2 6 0" stroke="#FF8A52" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg><b>BlueThermal</b></div>
+    <div class="site"><strong>Tallinn Bay · Site A</strong> · seawater heat pump, reference plant <span id="hdr-mw">70</span> MW</div>
+    <nav class="tabs" aria-label="Views">
+      <a href="#depth" id="t-depth">Intake depth</a>
+      <a href="#operate" id="t-operate">Operations</a>
+      <a href="#evidence" id="t-evidence">Evidence</a>
+    </nav>
+  </div>
+  <div class="dstat"><div class="wrap" id="dstat"></div></div>
+</header>
+
+<main class="wrap">
+  <section id="v-depth">
+    <div class="head">
+      <h1>Your intake depth decides your winter</h1>
+      <p>The Copernicus Marine model sees mild water at depth. Measurements show colder days. Press play to watch the winter at your intake.</p>
+    </div>
+    <div class="stack">
+      <div class="card hero">
+        <div class="scene" id="scene" role="img" aria-label="Sea cross-section with intake pipe"></div>
+        <div class="readout">
+          <div class="date">Day<b id="r-date">–</b></div>
+          <div class="gauges">
+            <div class="gauge"><div id="g-raw"></div><div class="lab">Model says</div></div>
+            <div class="gauge"><div id="g-cor"></div><div class="lab">Corrected</div></div>
+          </div>
+          <div class="counters">
+            <div class="ctr"><div class="k">Cold-water days so far</div><div class="v"><b id="c-cold">0</b><s id="c-cold-r">0</s></div></div>
+            <div class="ctr"><div class="k">Backup heat so far</div><div class="v"><b id="c-mwh">0</b><s id="c-mwh-r">0</s></div></div>
+          </div>
+          <small style="color:var(--muted)">Cold-water day: intake below 3 °C. Grey, struck through: what the raw model shows.</small>
+        </div>
+        <div class="controls">
+          <button class="play" id="play" type="button">▶ Play winter</button>
+          <div class="timeline"><input type="range" id="day" min="0" max="1" value="0" aria-label="Day of winter"><small><span id="t0"></span><span id="t1"></span></small></div>
+          <div><span class="seglab">Depth</span><span class="seg" id="seg-depth"></span></div>
+          <div><span class="seglab">Winter</span><span class="seg" id="seg-winter"></span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>What each depth means for your plant</h2>
+        <p class="answer" id="answer"></p>
+        <div class="bars" id="bars"></div>
+        <div class="legend"><span><i style="background:var(--heat)"></i>Backup heat needed, corrected</span><span><i style="background:var(--raw)"></i>What the raw model shows</span></div>
+      </div>
+
+      <details class="more">
+        <summary>Details: daily temperature and plant assumptions</summary>
+        <div>
+          <div>
+            <h3 class="h3s">Daily intake temperature</h3>
+            <div class="chartbox sm"><canvas id="dchart" aria-label="Daily intake temperature"></canvas></div>
+            <div class="key"><span><i style="background:var(--raw)"></i>Copernicus model</span><span><i style="background:var(--heat)"></i>Corrected with Keri</span><span><i style="background:var(--bad);height:1px"></i>3 °C</span></div>
+          </div>
+          <div>
+            <h3 class="h3s">Plant assumptions</h3>
+            <p class="note">Defaults are Esbjerg's published values (70 MW, 14 000 m³/h, COP 2.8 at 3.3 °C); our model reproduces Esbjerg's 70 MW within 3 %. Enter your plant's values.</p>
+            <div class="sliders" id="pctl"></div>
+          </div>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <section id="v-operate" hidden>
+    <div class="head">
+      <h1>Run the plant on the right numbers</h1>
+      <p>Heat pump, heat storage and electric boiler scheduled hour by hour against sea temperature and electricity price.</p>
+    </div>
+    <div class="stack">
+      <div><span class="seg" id="seg-mode"></span></div>
+      <div id="op-back" class="card">
+        <div style="display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between">
+          <h2 id="rp-title" style="margin:0">Look back</h2>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+            <label for="backdate" class="seglab">Week starting</label>
+            <input type="date" id="backdate" style="font:500 14px var(--f-mono);padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink)">
+            <span class="seg" id="seg-presets"></span>
+          </div>
+        </div>
+        <p class="sub" id="rp-sub" style="margin-top:10px"></p>
+        <div class="compare" id="compare"></div>
+        <div class="saving" id="saving"></div>
+      </div>
+      <div id="op-live" class="kpis" hidden></div>
+      <div class="card">
+        <h2 id="plan-title">Hourly plan</h2>
+        <p class="sub" id="plan-sub"></p>
+        <div class="chartbox"><canvas id="hplan" aria-label="Hourly heat production plan"></canvas></div>
+        <div class="key" id="plan-key"></div>
+      </div>
+      <details class="more">
+        <summary>Details: day by day, storage and demand settings</summary>
+        <div>
+          <div class="tablewrap"><table id="otable"></table></div>
+          <div class="sliders" id="octl"></div>
+          <p class="note" style="margin:0">Heat demand follows Tallinn air temperature. It is an illustrative demand curve scaled to the plant, not a utility's metered load. Electric boiler up to 40 MW, as at Esbjerg.</p>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <section id="v-evidence" hidden>
+    <div class="head">
+      <h1>Checked against the sea</h1>
+      <p>Every number here is compared with what was measured. Reference: the Keri cabled station operated by TalTech, 2 to 99 m deep.</p>
+    </div>
+    <div class="stack">
+      <div class="facts" id="facts"></div>
+      <div class="card">
+        <div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px;align-items:center">
+          <h2 id="vtitle" style="margin:0">Keri station</h2>
+          <span class="seg" id="seg-vdepth"></span>
+        </div>
+        <div class="chartbox" style="margin-top:12px"><canvas id="vchart" aria-label="Copernicus model against Keri measurements"></canvas></div>
+        <div class="key"><span><i style="background:var(--raw)"></i>Copernicus model</span><span><i style="background:var(--sea)"></i>Measured at Keri</span><span><i style="background:var(--bad);height:1px"></i>3 °C</span></div>
+      </div>
+      <details class="more">
+        <summary>Details: winter statistics, real forecast test, AI models</summary>
+        <div>
+          <div class="tablewrap"><table id="vtable"></table></div>
+          <div class="two">
+            <div>
+              <h3 class="h3s">Real forecast test</h3>
+              <p class="note" id="ftsub"></p>
+              <div class="chartbox sm"><canvas id="ftchart" aria-label="Forecast error by days ahead"></canvas></div>
+              <div class="key"><span><i style="background:var(--sea)"></i>Copernicus forecast</span><span><i style="background:var(--raw)"></i>Last measurement kept</span><span><i style="background:var(--heat)"></i>Forecast + last error</span></div>
+            </div>
+            <div>
+              <h3 class="h3s">Which correction is used</h3>
+              <div class="tablewrap"><table class="wraptext"><thead><tr><th>Method</th><th>When</th><th>Evidence</th></tr></thead><tbody>
+                <tr><td>Station transfer</td><td>60–70 m, station within ~40 km</td><td>60 m error 0.70 → 0.40 °C at 3 independent ship stations</td></tr>
+                <tr><td>AI error model</td><td>No station nearby; 40 m</td><td>40 m error lower on both unseen winters</td></tr>
+                <tr><td>Forecast as is</td><td>Model within 0.5 °C of Keri</td><td>Oct 2026: 0.1–0.3 °C error up to 8 days</td></tr>
+              </tbody></table></div>
+            </div>
+          </div>
+          <div>
+            <h3 class="h3s">AI error model for sea temperature, tested on an unseen winter</h3>
+            <p class="note">Gradient boosting on Copernicus fields only, so it runs where no station exists. Error (RMSE) in °C at Keri, December to April.</p>
+            <div class="tablewrap"><table id="mltable"></table></div>
+          </div>
+          <div>
+            <h3 class="h3s">AI electricity price forecast</h3>
+            <p class="note" id="pricenote" style="margin:0"></p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </section>
+</main>
+<footer class="wrap" id="foot"></footer>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+<script>
+const S = /*STATIC*/null;
+const LIVE = /*LIVE*/null;
+const $ = s => document.querySelector(s);
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const DEPTHS = [20, 40, 60, 70], LIMIT = 3.0, BOILER = 40;
+const P = { nom: 70, flow: 14000, margin: 1.0, maxdt: 3.0, supply: 75 };
+const OP = { storage: 300, scale: 1.0 };
+const st = { winter: '2023-24', depth: 70, day: null, mode: 'live', back: null, vdepth: 60 };
+try { const s = JSON.parse(localStorage.getItem('bt2') || '{}'); Object.assign(P, s.P || {}); Object.assign(OP, s.OP || {}); } catch (e) {}
+const save = () => { try { localStorage.setItem('bt2', JSON.stringify({ P, OP })); } catch (e) {} };
+const f1 = (v, d = 1) => v == null || isNaN(v) ? '–' : v.toLocaleString('en-GB', { minimumFractionDigits: d, maximumFractionDigits: d });
+const f0 = v => f1(v, 0);
+const sum = (a, f = x => x) => a.reduce((s, x) => s + f(x), 0);
+
+const freeze = s => -0.0575 * s + 1.710523e-3 * Math.pow(s, 1.5) - 2.154996e-4 * s * s;
+const carnot = t => (P.supply + 5 + 273.15) / ((P.supply + 5) - (t - 5));
+const cop = t => 2.8 * carnot(t) / carnot(3.3);
+function capacity(t, s) {
+  if (t == null || s == null) return { mw: null, cop: null };
+  const dt = Math.max(0, Math.min(P.maxdt, t - (freeze(s) + P.margin)));
+  const c = cop(t), cold = P.flow / 3600 * 1006 * 4.0 * dt / 1000;
+  return { mw: Math.min(P.nom, cold * c / (c - 1)), cop: c };
+}
+
+const TS = [[-0.5, [27, 52, 128]], [2, [52, 110, 190]], [3, [96, 160, 214]], [4.5, [150, 205, 214]], [6, [232, 196, 140]], [9, [232, 140, 80]], [14, [201, 80, 28]]];
+function tcol(t) {
+  if (t == null) return '#8A9AA4';
+  if (t <= TS[0][0]) return `rgb(${TS[0][1]})`;
+  for (let i = 1; i < TS.length; i++) if (t <= TS[i][0]) { const [a, ca] = TS[i - 1], [b, cb] = TS[i], k = (t - a) / (b - a);
+    return `rgb(${ca.map((v, j) => Math.round(v + (cb[j] - v) * k)).join(',')})`; }
+  return `rgb(${TS[TS.length - 1][1]})`;
+}
+
+const charts = {};
+function chart(id, cfg) {
+  if (charts[id]) charts[id].destroy();
+  const line = css('--line'); Chart.defaults.font.family = css('--f-body'); Chart.defaults.color = css('--muted');
+  const u = cfg.options || {};
+  cfg.options = Object.assign({ responsive: true, maintainAspectRatio: false, animation: false, interaction: { mode: 'index', intersect: false } }, u);
+  cfg.options.plugins = Object.assign({}, u.plugins || {}, { legend: { display: false },
+    tooltip: Object.assign({ backgroundColor: css('--surface'), titleColor: css('--ink'), bodyColor: css('--ink'), borderColor: line, borderWidth: 1 }, (u.plugins || {}).tooltip || {}) });
+  for (const ax of Object.values(cfg.options.scales || {})) { ax.grid = Object.assign({ color: line }, ax.grid || {}); ax.border = { display: false }; }
+  charts[id] = new Chart(document.getElementById(id), cfg);
+}
+const sd = d => new Date(d + 'T00:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
+const sdl = d => new Date(d + 'T00:00:00Z').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+function seg(el, items, cur, on) {
+  el.innerHTML = '';
+  for (const [v, label] of items) { const b = document.createElement('button'); b.type = 'button'; b.textContent = label; b.setAttribute('aria-pressed', v === cur); b.onclick = () => on(v); el.appendChild(b); }
+}
+
+/* ===== DEPTH ===== */
+const WINTERS = () => Object.keys(S.winters).filter(w => S.winters[w].has_obs);
+function series(w, z) {
+  const W = S.winters[w], D = W[z];
+  return W.days.map((d, i) => { const r = D.raw[i], c = D.cor[i], s = D.sal[i];
+    return { d, raw: r, cor: c, sal: s, capR: capacity(r, s).mw, capC: capacity(c, s).mw }; });
+}
+function depthSummary(w, z) {
+  const a = series(w, z).filter(x => x.cor != null && x.raw != null);
+  return { cold: a.filter(x => x.cor < LIMIT).length, coldR: a.filter(x => x.raw < LIMIT).length,
+    mwh: sum(a, x => Math.max(0, P.nom - x.capC) * 24), mwhR: sum(a, x => Math.max(0, P.nom - x.capR) * 24), n: a.length };
+}
+function gauge(el, v, color) {
+  const frac = v == null ? 0 : Math.max(0, Math.min(1, v / P.nom)), R = 70, cx = 90, cy = 86;
+  const ang = Math.PI * (1 - frac), x = cx + R * Math.cos(ang), y = cy - R * Math.sin(ang);
+  el.innerHTML = `<svg viewBox="0 0 180 112"><path d="M20 86 A70 70 0 0 1 160 86" fill="none" stroke="${css('--line')}" stroke-width="14" stroke-linecap="round"/>
+    ${frac > 0.001 ? `<path d="M20 86 A70 70 0 0 1 ${x.toFixed(1)} ${y.toFixed(1)}" fill="none" stroke="${color}" stroke-width="14" stroke-linecap="round"/>` : ''}
+    <text x="90" y="80" text-anchor="middle" font-family="Archivo, Arial" font-weight="700" font-size="30" fill="${css('--ink')}">${v == null ? '–' : f0(v)}</text>
+    <text x="90" y="102" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="${css('--muted')}">MW of ${P.nom}</text></svg>`;
+}
+function scene(i) {
+  const W = S.winters[st.winter], Wd = 640, H = 440, top = 96, bot = 392, sx = 66, ex = 560, mid = (sx + ex) / 2;
+  const y = z => top + (bot - top) * z / 80;
+  const stops = k => { const p = DEPTHS.map(z => [z, W[z][k][i]]); const arr = [[0, p[0][1]], ...p, [80, p[3][1]]];
+    return arr.map(([z, t]) => `<stop offset="${(z / 80 * 100).toFixed(1)}%" stop-color="${tcol(t)}"/>`).join(''); };
+  const z = st.depth, tr = W[z].raw[i], tc = W[z].cor[i];
+  const tag = (x, t) => `<rect x="${x - 56}" y="${y(z) - 44}" width="112" height="30" rx="8" fill="${css('--surface')}" stroke="${css('--line')}"/>
+    <text x="${x}" y="${y(z) - 24}" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="15" font-weight="600" fill="${t != null && t < LIMIT ? css('--bad') : css('--ink')}">${t == null ? 'no data' : f1(t, 1) + ' °C'}</text>`;
+  const ticks = [0, 20, 40, 60, 80].map(d => `<line x1="${sx - 6}" x2="${sx}" y1="${y(d)}" y2="${y(d)}" stroke="${css('--muted')}"/><text x="${sx - 10}" y="${y(d) + 4}" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="11" fill="${css('--muted')}">${d} m</text>`).join('');
+  const leg = [0, 2, 3, 4, 6, 9, 12].map((t, k) => `<rect x="${k * 34}" y="0" width="34" height="8" fill="${tcol(t)}"/><text x="${k * 34}" y="20" font-family="IBM Plex Mono, monospace" font-size="9" fill="${css('--muted')}">${t}°</text>`).join('');
+  $('#scene').innerHTML = `<svg viewBox="0 0 ${Wd} ${H}">
+    <defs><linearGradient id="gr" x1="0" y1="0" x2="0" y2="1">${stops('raw')}</linearGradient><linearGradient id="gc" x1="0" y1="0" x2="0" y2="1">${stops('cor')}</linearGradient></defs>
+    <text x="${(sx + mid) / 2}" y="34" text-anchor="middle" font-family="IBM Plex Sans, Arial" font-size="13" font-weight="600" letter-spacing=".06em" fill="${css('--muted')}">COPERNICUS MODEL</text>
+    <text x="${(mid + ex) / 2}" y="34" text-anchor="middle" font-family="IBM Plex Sans, Arial" font-size="13" font-weight="600" letter-spacing=".06em" fill="${css('--heat')}">CORRECTED</text>
+    <text x="${(mid + ex) / 2}" y="52" text-anchor="middle" font-family="IBM Plex Sans, Arial" font-size="11" fill="${css('--muted')}">with Keri measurements</text>
+    <path d="M${ex} ${top} L${ex + 24} ${top - 20} L${Wd} ${top - 20} L${Wd} ${H} L${ex} ${H} Z" fill="${css('--line')}"/>
+    <g transform="translate(${ex + 30},${top - 66})"><rect x="0" y="14" width="50" height="32" rx="2" fill="${css('--surface')}" stroke="${css('--muted')}"/><path d="M8 30c4-4 8 4 12 0s8 4 12 0s8 4 12 0" stroke="${css('--heat')}" stroke-width="2" fill="none"/><text x="25" y="62" text-anchor="middle" font-family="IBM Plex Sans, Arial" font-size="10" fill="${css('--muted')}">plant</text></g>
+    <rect x="${sx}" y="${top}" width="${mid - sx}" height="${bot - top}" fill="url(#gr)"/>
+    <rect x="${mid}" y="${top}" width="${ex - mid}" height="${bot - top}" fill="url(#gc)"/>
+    <line x1="${mid}" x2="${mid}" y1="${top}" y2="${bot}" stroke="${css('--surface')}" stroke-width="3"/>
+    <path d="M${sx} ${bot} Q ${mid} ${bot - 16} ${ex} ${bot - 4} L ${ex} ${H} L ${sx} ${H} Z" fill="${css('--line')}"/>
+    <line x1="${sx}" x2="${ex}" y1="${y(z)}" y2="${y(z)}" stroke="${css('--ink')}" stroke-dasharray="5 5" stroke-width="1.2" opacity=".75"/>
+    <path d="M${ex + 40} ${top - 20} L${ex + 40} ${top - 6} Q ${ex + 40} ${top + 20} ${ex - 20} ${top + 40} L ${mid + 10} ${y(z) - 4}" fill="none" stroke="${css('--heat')}" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="${mid}" cy="${y(z)}" r="9" fill="${css('--heat')}" stroke="${css('--surface')}" stroke-width="3"/>
+    ${tag((sx + mid) / 2, tr)}${tag((mid + ex) / 2, tc)}
+    ${ticks}
+    <text x="${sx}" y="${H - 12}" font-family="IBM Plex Sans, Arial" font-size="11" fill="${css('--muted')}">Colour = water temperature · intake at ${z} m</text>
+    <g transform="translate(${ex - 238},${H - 26})">${leg}</g>
+  </svg>`;
+}
+let timer = null;
+function renderDay() {
+  const W = S.winters[st.winter], i = st.day, ser = series(st.winter, st.depth), x = ser[i];
+  $('#r-date').textContent = sdl(W.days[i]);
+  scene(i);
+  gauge($('#g-raw'), x.capR, css('--raw'));
+  gauge($('#g-cor'), x.capC, x.capC != null && x.capC < 0.8 * P.nom ? css('--heat') : css('--sea'));
+  const sofar = ser.slice(0, i + 1).filter(v => v.cor != null);
+  $('#c-cold').textContent = sofar.filter(v => v.cor < LIMIT).length;
+  $('#c-cold-r').textContent = sofar.filter(v => v.raw < LIMIT).length;
+  $('#c-mwh').textContent = f0(sum(sofar, v => Math.max(0, P.nom - v.capC) * 24)) + ' MWh';
+  $('#c-mwh-r').textContent = f0(sum(sofar, v => Math.max(0, P.nom - v.capR) * 24)) + ' MWh';
+  $('#day').value = i;
+}
+function renderDepth() {
+  const W = S.winters[st.winter];
+  if (st.day == null || st.day >= W.days.length) {
+    const ser = series(st.winter, st.depth); let k = 0, m = 1e9; ser.forEach((x, j) => { if (x.cor != null && x.cor < m) { m = x.cor; k = j; } }); st.day = k; }
+  $('#day').max = W.days.length - 1; $('#t0').textContent = sd(W.days[0]); $('#t1').textContent = sd(W.days[W.days.length - 1]);
+  seg($('#seg-depth'), DEPTHS.map(z => [z, z + ' m']), st.depth, z => { st.depth = z; renderDepth(); });
+  seg($('#seg-winter'), WINTERS().map(w => [w, w.replace('-', '–')]), st.winter, w => { if (timer) togglePlay(); st.winter = w; st.day = null; renderDepth(); });
+  renderDay();
+  const rows = DEPTHS.map(z => ({ z, s: depthSummary(st.winter, String(z)) }));
+  const mx = Math.max(...rows.map(r => Math.max(r.s.mwh, r.s.mwhR)), 1);
+  $('#bars').innerHTML = rows.map(({ z, s }) => `<div class="brow" role="button" tabindex="0" data-z="${z}" aria-pressed="${z === st.depth}">
+      <span class="d">${z} m</span>
+      <span class="track"><span class="bar-c" style="width:${(s.mwh / mx * 100).toFixed(1)}%"></span><span class="bar-r" style="width:${(s.mwhR / mx * 100).toFixed(1)}%"></span></span>
+      <span class="val"><b>${f0(s.mwh)} MWh</b><br>${s.cold} cold days</span></div>`).join('');
+  document.querySelectorAll('.brow').forEach(b => { const go = () => { st.depth = +b.dataset.z; renderDepth(); }; b.onclick = go; b.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } }; });
+  const a = rows.find(r => r.z === st.depth).s, w = st.winter.replace('-', '–'), r60 = rows.find(r => r.z === 60).s, r70 = rows.find(r => r.z === 70).s;
+  $('#answer').innerHTML = `At ${st.depth} m in winter ${w}, plan for <em>${a.cold} cold-water days</em> and <em>${f0(a.mwh)} MWh</em> of backup heat. The raw model shows ${a.coldR} days and ${f0(a.mwhR)} MWh.` +
+    (r60.mwh > r70.mwh * 1.5 ? ` Moving the intake from 60 to 70 m saves ${f0(r60.mwh - r70.mwh)} MWh of backup heat.` : '');
+  const ser = series(st.winter, st.depth);
+  chart('dchart', { type: 'line', data: { labels: W.days.map(sd), datasets: [
+    { label: 'Copernicus model', data: ser.map(x => x.raw), borderColor: css('--raw'), borderWidth: 1.5, pointRadius: 0 },
+    { label: 'Corrected', data: ser.map(x => x.cor), borderColor: css('--heat'), borderWidth: 2.2, pointRadius: 0 },
+    { label: '3 °C', data: W.days.map(() => LIMIT), borderColor: css('--bad'), borderWidth: 1, borderDash: [5, 4], pointRadius: 0 }] },
+    options: { scales: { x: { ticks: { maxTicksLimit: 8 }, grid: { display: false } }, y: { title: { display: true, text: '°C' } } },
+      plugins: { tooltip: { callbacks: { label: x => `${x.dataset.label}: ${f1(x.parsed.y, 2)} °C` } } } } });
+}
+function togglePlay() {
+  const btn = $('#play');
+  if (timer) { clearInterval(timer); timer = null; btn.textContent = '▶ Play winter'; return; }
+  const W = S.winters[st.winter]; if (st.day >= W.days.length - 1) st.day = 0;
+  btn.textContent = '❚❚ Pause';
+  timer = setInterval(() => { if (st.day >= W.days.length - 1) { togglePlay(); return; } st.day++; renderDay(); }, 110);
+}
+
+/* ===== OPERATIONS ===== */
+function plan(H, capKey, S0) {
+  const N = S0 > 0 ? 20 : 0, step = N ? S0 / N : 0, start = Math.round(N / 2), INF = 1e18;
+  const cost = (h, prod) => { const hp = Math.min(Math.max(prod, 0), h[capKey]); return h.price * (hp / h.cop + Math.max(prod - h[capKey], 0)); };
+  let best = Array(N + 1).fill(INF); best[start] = 0; const back = [];
+  for (const h of H) {
+    const nb = Array(N + 1).fill(INF), bk = Array(N + 1).fill(-1), pmax = h[capKey] + Math.max(BOILER, h.demand - h[capKey]);
+    for (let a = 0; a <= N; a++) { if (best[a] >= INF) continue;
+      for (let b = 0; b <= N; b++) { const prod = h.demand + (b - a) * step; if (prod < 0 || prod > pmax + 1e-9) continue;
+        const c = best[a] + cost(h, prod); if (c < nb[b]) { nb[b] = c; bk[b] = a; } } }
+    best = nb; back.push(bk);
+  }
+  let s = best[start] < INF ? start : best.indexOf(Math.min(...best)); const lv = Array(H.length + 1); lv[H.length] = s;
+  for (let t = H.length - 1; t >= 0; t--) { s = back[t][s]; lv[t] = s; }
+  return H.map((h, t) => ({ prod: h.demand + (lv[t + 1] - lv[t]) * step, soc: lv[t + 1] * step }));
+}
+function execute(H, sched) {
+  return H.map((h, t) => { const prod = sched[t].prod, hp = Math.min(prod, h.cap), boiler = Math.max(prod - h.cap, 0);
+    return { hp, boiler, soc: sched[t].soc, cost: h.price * (hp / h.cop + boiler) }; });
+}
+const demandOf = air => P.nom * OP.scale * (0.35 + 0.75 * Math.min(1, Math.max(0, (17 - air) / 32)));
+const opDepth = () => st.depth >= 60 ? st.depth : 70;
+function backRange() {
+  const G = S.daily, Hh = S.hourly; if (!G || !Hh) return null;
+  const d0 = new Date(Math.max(new Date(G.start + 'T00:00:00Z'), new Date(Hh.start)));
+  const gEnd = new Date(G.start + 'T00:00:00Z'); gEnd.setUTCDate(gEnd.getUTCDate() + G['70'].raw.length - 1);
+  const hEnd = new Date(Hh.start); hEnd.setUTCHours(hEnd.getUTCHours() + Hh.price.length - 1);
+  const end = new Date(Math.min(gEnd, hEnd)); end.setUTCDate(end.getUTCDate() - 6);
+  return { min: d0.toISOString().slice(0, 10), max: end.toISOString().slice(0, 10) };
+}
+function historyHours(start) {
+  const G = S.daily, Hh = S.hourly, z = String(opDepth()), g0 = new Date(G.start + 'T00:00:00Z'), h0 = new Date(Hh.start), H = [];
+  for (let k = 0; k < 7 * 24; k++) {
+    const t = new Date(new Date(start + 'T00:00:00Z').getTime() + k * 3600e3), key = t.toISOString().slice(0, 13) + ':00Z', d = key.slice(0, 10);
+    const gi = Math.round((new Date(d + 'T00:00:00Z') - g0) / 864e5), hi = Math.round((t - h0) / 3600e3);
+    const raw = G[z].raw[gi], cor = G[z].cor[gi], sal = G[z].sal[gi], price = Hh.price[hi], air = Hh.air[hi];
+    if (raw == null || price == null) continue;
+    const real = cor != null ? cor : raw, cr = capacity(raw, sal), cc = capacity(real, sal);
+    H.push({ k: key, d, price, src: 'pub', demand: demandOf(air == null ? 0 : air), capRaw: cr.mw, cap: cc.mw, cop: cc.cop, tRaw: raw, t: real, obs: cor != null });
+  }
+  return H;
+}
+function liveHours() {
+  const T = LIVE.forecast, z = opDepth(), today = T.issued, days = T.dates;
+  const keriObs = LIVE.keri_obs[String(z)] || {}, keriMod = T[`keri_${z}_t`];
+  let err = null;
+  for (let i = days.length - 1; i >= 0; i--) { const o = keriObs[days[i]]; if (o != null && keriMod[i] != null) { err = keriMod[i] - o; break; } }
+  const apply = err != null && Math.abs(err) > 0.5;
+  const byDay = {}; days.forEach((d, i) => { const r = T[`site_${z}_t`][i]; byDay[d] = { raw: r, t: r == null ? null : (apply ? r - err : r), s: T[`site_${z}_s`][i] }; });
+  const price = {}; LIVE.prices.time.forEach((t, i) => price[t] = LIVE.prices.eur_mwh[i]);
+  const ml = {}; if (LIVE.price_ml) LIVE.price_ml.time.forEach((t, i) => ml[t] = LIVE.price_ml.eur_mwh[i]);
+  const prof = Array(24).fill(0), cnt = Array(24).fill(0); LIVE.prices.time.forEach((t, i) => { const h = +t.slice(11, 13); prof[h] += LIVE.prices.eur_mwh[i]; cnt[h]++; });
+  const air = {}; LIVE.weather.time.forEach((t, i) => air[t.slice(0, 13) + ':00Z'] = LIVE.weather.temp[i]);
+  const now = new Date(); now.setUTCMinutes(0, 0, 0); now.setUTCHours(now.getUTCHours() + 1);
+  const end = new Date(days[days.length - 1] + 'T23:00:00Z'), H = []; let la = 5;
+  for (let t = new Date(now); t <= end; t = new Date(t.getTime() + 3600e3)) {
+    const k = t.toISOString().slice(0, 13) + ':00Z', d = k.slice(0, 10), x = byDay[d]; if (!x || x.t == null || d < today) continue;
+    const hh = t.getUTCHours(), src = price[k] != null ? 'pub' : ml[k] != null ? 'ml' : 'prof';
+    const p = src === 'pub' ? price[k] : src === 'ml' ? ml[k] : prof[hh] / Math.max(cnt[hh], 1);
+    if (air[k] != null) la = air[k];
+    const c = capacity(x.t, x.s), cr = capacity(x.raw, x.s);
+    H.push({ k, d, price: p, src, demand: demandOf(la), cap: c.mw, capRaw: cr.mw, cop: c.cop, t: x.t, tRaw: x.raw });
+  }
+  return { H, err, apply };
+}
+const hourLabel = k => { const d = new Date(k); return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', timeZone: 'Europe/Tallinn' }) + ' ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Europe/Tallinn' }); };
+function planChart(H, run, opts) {
+  chart('hplan', { type: 'bar', data: { labels: H.map(h => hourLabel(h.k)), datasets: [
+      { type: 'line', label: 'Heat demand', data: H.map(h => h.demand), borderColor: css('--ink'), borderWidth: 1.3, pointRadius: 0, stepped: true, yAxisID: 'y', order: 0, stack: 'l1' },
+      ...(opts.showRawCap ? [{ type: 'line', label: 'Capacity the raw model promised', data: H.map(h => h.capRaw), borderColor: css('--raw'), borderDash: [6, 4], borderWidth: 1.6, pointRadius: 0, stepped: true, yAxisID: 'y', order: 0, stack: 'l2' }] : []),
+      { type: 'line', label: 'Real capacity', data: H.map(h => h.cap), borderColor: css('--sea'), borderWidth: 1.8, pointRadius: 0, stepped: true, yAxisID: 'y', order: 0, stack: 'l3' },
+      { type: 'line', label: 'Electricity price', data: H.map(h => h.price), borderColor: css('--warn'), borderWidth: 1.4, pointRadius: 0, yAxisID: 'y2', order: 0,
+        segment: { borderDash: c => H[c.p1DataIndex].src === 'pub' ? undefined : [4, 4] } },
+      { label: 'Heat pump', data: run.map(x => x.hp), backgroundColor: css('--sea-soft'), stack: 'p', barPercentage: 1, categoryPercentage: 1, yAxisID: 'y', order: 1 },
+      { label: 'Electric boiler', data: run.map(x => x.boiler), backgroundColor: css('--heat'), stack: 'p', barPercentage: 1, categoryPercentage: 1, yAxisID: 'y', order: 1 } ] },
+    options: { scales: { x: { stacked: true, ticks: { maxTicksLimit: 8, maxRotation: 0 }, grid: { display: false } },
+        y: { stacked: true, min: 0, suggestedMax: P.nom * 1.25, title: { display: true, text: 'MW heat' } },
+        y2: { position: 'right', grid: { display: false }, title: { display: true, text: '€ / MWh electricity' } } },
+      plugins: { tooltip: { callbacks: { label: x => { const l = x.dataset.label; if (l === 'Electricity price') return `${l}: €${f1(x.parsed.y)}${H[x.dataIndex].src === 'pub' ? '' : H[x.dataIndex].src === 'ml' ? ' (AI forecast)' : ' (profile)'}`; return `${l}: ${f1(x.parsed.y)} MW`; } } } } } });
+  $('#plan-key').innerHTML = `<span><i style="background:var(--sea-soft);height:8px"></i>Heat pump</span><span><i style="background:var(--heat);height:8px"></i>Electric boiler</span><span><i style="background:var(--ink)"></i>Heat demand</span><span><i style="background:var(--sea)"></i>Real capacity</span>${opts.showRawCap ? '<span><i style="background:var(--raw)"></i>Capacity the raw model promised</span>' : ''}<span><i style="background:var(--warn)"></i>Electricity price${opts.ml ? ' (dashed: AI forecast)' : ''}</span>`;
+}
+function dayTable(H, run) {
+  const days = [...new Set(H.map(h => h.d))];
+  $('#otable').innerHTML = `<thead><tr><th>Day</th><th>Intake °C</th><th>Capacity MW</th><th>Demand MWh</th><th>Heat pump MWh</th><th>Boiler MWh</th><th>Avg price €/MWh</th><th>Cost €</th></tr></thead><tbody>` +
+    days.map(d => { const ix = H.map((h, i) => h.d === d ? i : -1).filter(i => i >= 0), h0 = H[ix[0]];
+      return `<tr><td>${new Date(d + 'T12:00:00Z').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}</td><td>${f1(h0.t, 2)}</td><td>${f0(h0.cap)}</td><td>${f0(sum(ix, i => H[i].demand))}</td><td>${f0(sum(ix, i => run[i].hp))}</td><td>${f0(sum(ix, i => run[i].boiler))}</td><td>${f1(sum(ix, i => H[i].price) / ix.length)}</td><td>${f0(sum(ix, i => run[i].cost))}</td></tr>`; }).join('') + '</tbody>';
+}
+function renderOperate() {
+  const modes = [];
+  if (LIVE) modes.push(['live', 'Now · next days']);
+  if (S.daily && S.hourly) modes.push(['back', 'Look back · pick a date']);
+  if (!LIVE) st.mode = 'back';
+  seg($('#seg-mode'), modes, st.mode, m => { st.mode = m; renderOperate(); });
+  $('#op-back').hidden = st.mode !== 'back'; $('#op-live').hidden = st.mode !== 'live';
+  const z = opDepth();
+  if (st.mode === 'back') {
+    const rg = backRange(), inp = $('#backdate');
+    if (!st.back) st.back = S.cold_week ? S.cold_week.dates[0] : rg.max;
+    st.back = st.back < rg.min ? rg.min : st.back > rg.max ? rg.max : st.back;
+    inp.min = rg.min; inp.max = rg.max; inp.value = st.back;
+    inp.onchange = () => { if (inp.value) { st.back = inp.value; renderOperate(); } };
+    const pre = []; if (S.cold_week) pre.push([S.cold_week.dates[0], 'Coldest week 2024']);
+    const ly = new Date(); ly.setUTCFullYear(ly.getUTCFullYear() - 1); const lys = ly.toISOString().slice(0, 10);
+    if (lys >= rg.min && lys <= rg.max) pre.push([lys, 'This week last year']);
+    pre.push([rg.max, 'Latest week']);
+    seg($('#seg-presets'), pre, st.back, v => { st.back = v; renderOperate(); });
+    const H = historyHours(st.back);
+    if (!H.length) { $('#compare').innerHTML = ''; $('#saving').innerHTML = '<span>No data for this week.</span>'; return; }
+    const end = H[H.length - 1].d, anyObs = H.some(h => h.obs);
+    const naive = execute(H, plan(H, 'capRaw', OP.storage)), smart = execute(H, plan(H, 'cap', OP.storage));
+    const nb = sum(naive, x => x.boiler), sb = sum(smart, x => x.boiler), nc = sum(naive, x => x.cost), sc = sum(smart, x => x.cost);
+    const minRaw = Math.min(...H.map(h => h.tRaw)), minCor = Math.min(...H.map(h => h.t)), minCap = Math.min(...H.map(h => h.cap)), minCapR = Math.min(...H.map(h => h.capRaw));
+    $('#rp-title').textContent = `Look back at ${z} m`;
+    $('#rp-sub').textContent = `${sd(H[0].d)} to ${sd(end)} ${end.slice(0, 4)}: real sea temperatures, Estonian electricity prices and Tallinn weather. Two operators plan the same week with the same plant and ${OP.storage} MWh of heat storage.` +
+      (anyObs ? '' : ' No Keri measurements this week, so the corrected temperature equals the model and both plans are the same.');
+    $('#compare').innerHTML = `
+      <div class="plan"><h3>Planned with the raw model</h3><div class="rows">
+        <div class="row"><span>Coldest intake expected</span><b>${f1(minRaw)} °C</b></div>
+        <div class="row"><span>Lowest capacity expected</span><b>${f0(minCapR)} MW</b></div>
+        <div class="row"><span>Coldest intake in reality</span><b class="${minCor < minRaw - 0.3 ? 'bad' : ''}">${f1(minCor)} °C</b></div>
+        <div class="row"><span>Lowest capacity in reality</span><b class="${minCap < minCapR - 1 ? 'bad' : ''}">${f0(minCap)} MW</b></div>
+        <div class="row"><span>Boiler heat</span><b class="${nb > sb + 1 ? 'bad' : ''}">${f0(nb)} MWh</b></div>
+        <div class="row"><span>Electricity cost</span><b>€${f0(nc)}</b></div></div></div>
+      <div class="plan us"><h3>Planned with BlueThermal</h3><div class="rows">
+        <div class="row"><span>Coldest intake expected</span><b>${f1(minCor)} °C</b></div>
+        <div class="row"><span>Lowest capacity expected</span><b>${f0(minCap)} MW</b></div>
+        <div class="row"><span>Coldest intake in reality</span><b>${f1(minCor)} °C</b></div>
+        <div class="row"><span>Lowest capacity in reality</span><b>${f0(minCap)} MW</b></div>
+        <div class="row"><span>Boiler heat, placed in cheap hours</span><b>${f0(sb)} MWh</b></div>
+        <div class="row"><span>Electricity cost</span><b>€${f0(sc)}</b></div></div></div>`;
+    const d = nc - sc;
+    $('#saving').innerHTML = d > 1 ? `<b>€${f0(d)}</b><span>lower electricity cost this week and ${f0(Math.max(0, nb - sb))} MWh less boiler heat. Same plant, same prices; the difference is knowing the real intake temperature in advance.</span>`
+      : `<b>€0</b><span>${anyObs ? 'The model was right this week, so both plans cost the same.' : 'Both plans are the same without measurements.'} Try “Coldest week 2024”.</span>`;
+    $('#plan-title').textContent = 'BlueThermal plan for this week';
+    $('#plan-sub').textContent = 'Storage is filled before capacity drops, the heat pump runs in cheap hours, and the boiler runs only where the plan expects it.';
+    planChart(H, smart, { showRawCap: true }); dayTable(H, smart);
+  } else {
+    const L = liveHours(), H = L.H, run = execute(H, plan(H, 'cap', OP.storage)), base = execute(H, plan(H, 'cap', 0));
+    const minT = Math.min(...H.map(h => h.t)), minC = Math.min(...H.map(h => h.cap)), cost = sum(run, x => x.cost), cb = sum(base, x => x.cost);
+    $('#op-live').innerHTML = `
+      <div class="kpi"><div class="k">Coldest intake ahead</div><div class="big">${f1(minT, 1)} °C</div><div class="note">at ${z} m · ${L.apply ? 'corrected with Keri' : L.err == null ? 'no recent Keri data' : 'model agrees with Keri (' + (L.err > 0 ? '+' : '') + f1(L.err, 2) + ' °C)'}</div></div>
+      <div class="kpi"><div class="k">Lowest capacity ahead</div><div class="big">${f0(minC)} MW</div><div class="note">${minC >= P.nom - 0.5 ? 'full output every day' : 'below nominal ' + P.nom + ' MW'}</div></div>
+      <div class="kpi"><div class="k">Saved by smart scheduling</div><div class="big">€${f0(cb - cost)}</div><div class="note">vs. running without storage · ${H.filter(h => h.src === 'pub').length} h at published prices, rest AI forecast</div></div>`;
+    $('#plan-title').textContent = `Hourly plan from now to ${sd(H[H.length - 1].d)}`;
+    $('#plan-sub').textContent = 'Solid price: published Nord Pool day-ahead prices for Estonia. Dashed: AI price forecast from wind, temperature and sun.';
+    planChart(H, run, { showRawCap: false, ml: true }); dayTable(H, run);
+  }
+}
+
+/* ===== EVIDENCE ===== */
+function renderEvidence() {
+  const F70 = S.forecast_test['70'], F60 = S.forecast_test['60'];
+  const lo = Math.min(...F60.copernicus, ...F70.copernicus), hi = Math.max(...F60.copernicus, ...F70.copernicus);
+  const pt = LIVE && LIVE.price_ml ? LIVE.price_ml.test : null, ws = WINTERS();
+  const k60 = S.winters['2023-24'] && S.winters['2023-24']['60'];
+  const miss = k60 ? k60.keri_obs.filter(v => v != null && v < LIMIT).length : 38;
+  $('#facts').innerHTML = `
+    <div class="fact"><div class="big h">${miss} days</div><p>below 3 °C measured at 60 m in winter 2023–24. The raw model showed none.</p><small>Keri station vs Copernicus model</small></div>
+    <div class="fact"><div class="big">0.70 → 0.40 °C</div><p>error at 60 m after correcting with a nearby station.</p><small>3 independent ship stations, 17–37 km away</small></div>
+    <div class="fact"><div class="big">${f1(lo, 1)}–${f1(hi, 1)} °C</div><p>error of real Copernicus forecasts at 60–70 m, 1 to 8 days ahead.</p><small>${S.forecast_test_meta.files} forecasts archived since ${sd(S.forecast_test_meta.first)}</small></div>
+    <div class="fact"><div class="big">${pt ? '−' + f0(100 * (1 - pt.mae_ml / pt.mae_profile)) + ' %' : '–'}</div><p>electricity price error with our AI forecast, against a typical-day profile.</p><small>${pt ? 'last ' + pt.days + ' days' : 'not in this build'}</small></div>`;
+  seg($('#seg-vdepth'), DEPTHS.map(z => [z, z + ' m']), st.vdepth, z => { st.vdepth = z; renderEvidence(); });
+  const z = String(st.vdepth), labels = [], mod = [], obs = [];
+  ws.forEach((w, j) => { const W = S.winters[w]; if (j) { labels.push(''); mod.push(null); obs.push(null); }
+    W.days.forEach((d, i) => { labels.push(sd(d) + ' ' + d.slice(2, 4)); mod.push(W[z].keri_mod[i]); obs.push(W[z].keri_obs[i]); }); });
+  $('#vtitle').textContent = `Keri station at ${z} m, winters ${ws.map(w => w.replace('-', '–')).join(' and ')}`;
+  chart('vchart', { type: 'line', data: { labels, datasets: [
+      { label: 'Copernicus model', data: mod, borderColor: css('--raw'), borderWidth: 1.6, pointRadius: 0 },
+      { label: 'Measured', data: obs, borderColor: css('--sea'), borderWidth: 2.2, pointRadius: 0 },
+      { label: '3 °C', data: labels.map(() => LIMIT), borderColor: css('--bad'), borderWidth: 1, borderDash: [5, 4], pointRadius: 0 } ] },
+    options: { scales: { x: { ticks: { maxTicksLimit: 10, maxRotation: 0 }, grid: { display: false } }, y: { title: { display: true, text: '°C' } } },
+      plugins: { tooltip: { callbacks: { label: x => `${x.dataset.label}: ${f1(x.parsed.y, 2)} °C` } } } } });
+  let rows = '';
+  for (const d of DEPTHS) for (const w of ws) { const W = S.winters[w], o = W[d].keri_obs, m = W[d].keri_mod;
+    const ix = o.map((v, i) => v != null && m[i] != null ? i : -1).filter(i => i >= 0), e = ix.map(i => m[i] - o[i]);
+    const bias = sum(e) / e.length, rmse = Math.sqrt(sum(e, v => v * v) / e.length), co = ix.filter(i => o[i] < LIMIT).length, cm = ix.filter(i => m[i] < LIMIT).length;
+    rows += `<tr><td>${d} m · ${w.replace('-', '–')}</td><td>${ix.length}</td><td>${co}</td><td>${cm}</td><td>${(bias > 0 ? '+' : '') + f1(bias, 2)}</td><td>${f1(rmse, 2)}</td><td>${cm < co - 10 ? '<span class="pill bad">misses cold days</span>' : Math.abs(bias) < .3 ? '<span class="pill good">close</span>' : '<span class="pill warn">biased</span>'}</td></tr>`; }
+  $('#vtable').innerHTML = `<thead><tr><th>Depth · winter</th><th>Days</th><th>Cold days measured</th><th>Cold days in model</th><th>Bias °C</th><th>RMSE °C</th><th></th></tr></thead><tbody>${rows}</tbody>`;
+  const FZ = st.vdepth >= 60 ? String(st.vdepth) : '60', F = S.forecast_test[FZ], M = S.forecast_test_meta;
+  $('#ftsub').textContent = `Mean absolute error at ${FZ} m. ${M.files} daily forecasts from ${sd(M.first)}, checked against Keri to ${sd(M.last_obs)}.`;
+  chart('ftchart', { type: 'line', data: { labels: F.lead.map(l => l + ' d'), datasets: [
+      { label: 'Copernicus forecast', data: F.copernicus, borderColor: css('--sea'), borderWidth: 2.2, pointRadius: 3 },
+      { label: 'Last measurement kept', data: F.persistence, borderColor: css('--raw'), borderWidth: 1.6, pointRadius: 2 },
+      { label: 'Forecast + last error', data: F.corrected, borderColor: css('--heat'), borderWidth: 1.6, pointRadius: 2, borderDash: [4, 3] } ] },
+    options: { scales: { x: { grid: { display: false } }, y: { min: 0, title: { display: true, text: '°C' } } } } });
+  $('#mltable').innerHTML = !S.ml ? '<tbody><tr><td>Not in this build.</td></tr></tbody>' :
+    '<thead><tr><th>Depth · test winter</th><th>Raw model</th><th>AI corrected</th><th></th></tr></thead><tbody>' +
+    S.ml.map(r => { const g = r.rmse_ml < r.rmse_raw - 0.03, b = r.rmse_ml > r.rmse_raw + 0.03;
+      return `<tr><td>${r.depth} m · ${r.test_winter.replace('-', '–')}</td><td>${f1(r.rmse_raw, 2)}</td><td>${f1(r.rmse_ml, 2)}</td><td>${g ? '<span class="pill good">better</span>' : b ? '<span class="pill bad">worse</span>' : '<span class="pill info">same</span>'}</td></tr>`; }).join('') + '</tbody>';
+  $('#pricenote').textContent = pt ? `Gradient boosting on Estonian hourly prices since 2023 with weather at Tallinn, the Finnish west coast and the Lithuanian coast. Last ${pt.days} days: mean error €${f1(pt.mae_ml)}/MWh against €${f1(pt.mae_profile)} for a typical-day profile; the six cheapest hours of each day found ${pt.cheap6_ml} % of the time against ${pt.cheap6_profile} %. Tested with observed weather; live use relies on weather forecasts, so accuracy falls after about five days.` : 'Not in this build.';
+}
+
+/* ===== shared ===== */
+function slider(box, o, obj, key, onChange) {
+  const id = 'c-' + key, el = document.createElement('div'); el.className = 'ctl';
+  el.innerHTML = `<label for="${id}">${o.label}<output id="${id}-o"></output></label><input type="range" id="${id}" min="${o.min}" max="${o.max}" step="${o.step}" value="${obj[key]}"><small>${o.help}</small>`;
+  box.appendChild(el); const inp = el.querySelector('input'), out = el.querySelector('output'), show = () => out.textContent = o.fmt(obj[key]); show();
+  inp.addEventListener('input', () => { obj[key] = +inp.value; show(); save(); onChange(); });
+}
+function renderStatus() {
+  const parts = [];
+  if (LIVE) { const T = LIVE.forecast, ko = LIVE.keri_obs['70'] || {}, kd = Object.keys(ko).sort().pop(), age = d => (Date.now() - new Date(d + 'T00:00:00Z')) / 864e5;
+    const pz = LIVE.prices.time, last = pz[pz.length - 1];
+    parts.push(`<span><i class="dot${age(T.issued) > 2 ? ' old' : ''}"></i>Copernicus forecast <b>${sd(T.issued)}</b> → <b>${sd(T.dates[T.dates.length - 1])}</b></span>`,
+      `<span><i class="dot${kd && age(kd) > 3 ? ' old' : ''}"></i>Keri measured <b>${kd ? sd(kd) : '–'}</b></span>`,
+      `<span><i class="dot"></i>Prices published to <b>${new Date(last).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Tallinn' })}</b></span>`);
+    if (LIVE.price_ml) parts.push(`<span><i class="dot"></i>AI price forecast to <b>${sd(LIVE.price_ml.time[LIVE.price_ml.time.length - 1].slice(0, 10))}</b></span>`);
+    parts.push(`<span>Updated <b>${LIVE.created}</b></span>`);
+  } else parts.push('<span>Static build</span>');
+  $('#dstat').innerHTML = parts.join('');
+}
+const VIEWS = ['depth', 'operate', 'evidence'];
+function route() {
+  const v = VIEWS.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'depth';
+  if (timer && v !== 'depth') togglePlay();
+  for (const x of VIEWS) { $('#v-' + x).hidden = x !== v; const a = $('#t-' + x); if (x === v) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); }
+  $('#hdr-mw').textContent = P.nom;
+  if (v === 'depth') renderDepth(); if (v === 'operate') renderOperate(); if (v === 'evidence') renderEvidence();
+}
+function init() {
+  renderStatus();
+  const b = $('#pctl'), rer = () => route();
+  slider(b, { label: 'Nominal heat output', min: 20, max: 200, step: 5, fmt: v => v + ' MW', help: 'Esbjerg 70 MW · Stockholm Ropsten 180 MW' }, P, 'nom', rer);
+  slider(b, { label: 'Seawater flow', min: 4000, max: 40000, step: 500, fmt: v => v.toLocaleString('en-GB') + ' m³/h', help: 'Esbjerg 14 000 m³/h' }, P, 'flow', rer);
+  slider(b, { label: 'Outlet margin above freezing', min: 0.3, max: 2.5, step: 0.1, fmt: v => v.toFixed(1) + ' °C', help: 'Stockholm ≈ 0.8 °C · Esbjerg 2.0 °C. Results depend strongly on this.' }, P, 'margin', rer);
+  slider(b, { label: 'Max temperature drop', min: 1, max: 5, step: 0.1, fmt: v => v.toFixed(1) + ' °C', help: 'Esbjerg 2.9 °C · Stockholm 2.0 °C' }, P, 'maxdt', rer);
+  slider(b, { label: 'District heating supply', min: 60, max: 100, step: 1, fmt: v => v + ' °C', help: 'Sets how COP changes with intake temperature' }, P, 'supply', rer);
+  const o = $('#octl');
+  slider(o, { label: 'Heat storage', min: 0, max: 1000, step: 50, fmt: v => v + ' MWh', help: 'Helen Hanasaari storage: 1 000 MWh' }, OP, 'storage', rer);
+  slider(o, { label: 'Heat demand scale', min: 0.5, max: 1.5, step: 0.05, fmt: v => Math.round(v * 100) + ' %', help: '100 % ≈ nominal output at −15 °C air' }, OP, 'scale', rer);
+  $('#play').onclick = togglePlay;
+  $('#day').addEventListener('input', e => { st.day = +e.target.value; renderDay(); });
+  $('#foot').textContent = 'BlueThermal · Data: Copernicus Marine Service (Baltic Sea Physics Analysis and Forecast; Baltic in-situ observations, Keri station operated by TalTech), Elering / Nord Pool day-ahead prices, Open-Meteo weather. Plant values are illustrative, based on published figures from Esbjerg and Stockholm.';
+  addEventListener('hashchange', route);
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', route);
+  new MutationObserver(route).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  route();
+}
+if (window.Chart) init(); else addEventListener('load', init);
+</script>
